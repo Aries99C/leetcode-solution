@@ -1,0 +1,71 @@
+#### 方法一：自定义缓冲区读取复制
+
+方法 `read4` 的定义为：`int read4(char[] buf)`。根据定义，方法 `read4` 每次读取 `k` 个字符（`k` 不超过 4），并将读取的字符存入其输入参数 `buf` 中。
+
+方法 `read` 的输入参数 `buf` 用于存储读到的全部 `n` 个字符（或者当文件中的字符个数小于 `n` 时读取文件中的全部字符），显然不能直接用方法 `read` 的输入参数 `buf` 作为方法 `read4` 的输入参数，因此需要自定义一个缓冲区作为方法 `read4` 的输入参数，自定义缓冲区为 `char` 类型的数组，由于方法 `read4` 每次最多读取 4 个字符，因此将自定义缓冲区的长度指定为 4 即可满足读取的要求。
+
+每次调用方法 `read4` 之后得到读取的字符个数以及存储在自定义缓冲区内的读取内容，将自定义缓冲区内的相应数量的字符复制到 `buf` 即可完成存储到缓存数组的操作，读取的总字符个数为每次调用方法 `read4` 的返回值之和。
+
+读取过程中，记录读取的总字符数，以及缓存数组 `buf` 的当前下标。每次调用方法 `read4` 之后，从当前下标开始，将读取到的字符存储到缓存数组 `buf` 中，更新读取的总字符数，并将下标加上该次读取的字符个数，直到读满需要读取的字符数或者到达文件结束位置。
+
+* []
+
+```Java
+/**
+ * The read4 API is defined in the parent class Reader4.
+ *     int read4(char[] buf);
+ */
+public class Solution extends Reader4 {
+    /**
+     * @param buf Destination buffer
+     * @param n   Number of characters to read
+     * @return    The number of actual characters read
+     */
+    public int read(char[] buf, int n) {
+        int index = 0;
+        char[] temp = new char[4];
+        while (index < n) {
+            int count = read4(temp);
+            if (count == 0) {
+                break;
+            }
+            for (int i = 0; i < count; i++) {
+                buf[index + i] = temp[i];
+            }
+            index += count;
+        }
+        return Math.min(index, n);
+    }
+}
+```
+
+* []
+
+```Golang
+var solution = func(read4 func([]byte) int) func([]byte, int) int {
+    // implement read below.
+    return func(buf []byte, n int) int {
+        idx := 0
+        tmp := make([]byte, 4)
+        for {
+            cnt := read4(tmp)
+            for j := 0; j < cnt; j, idx = j + 1, idx + 1 {
+                buf[idx] = tmp[j]
+            }
+            if cnt < 4 {
+                break
+            }
+        }
+        if n < idx {
+            return n
+        }
+        return idx
+    }
+}
+```
+
+**复杂度分析**
+
+* 时间复杂度：$O(n)$，其中 $n$ 是要读取的字符数。每次调用方法 `read4` 读取 $4$ 个字符，一共从文件中读取最多 $n$ 个字符，因此最多读取次数为 $⌈n/4⌉$ 次。在此假设方法 `read4` 的时间复杂度为常数。
+* 空间复杂度：$O(1)$。自定义缓冲区，大小为 4 个字符，因此空间复杂度为常数。
+
